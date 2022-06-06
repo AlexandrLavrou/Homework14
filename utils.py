@@ -7,13 +7,13 @@ class DbConnect:
         self.connection = sqlite3.connect(path)
         self.cursor = self.connection.cursor()
 
-    # def __del__(self):
-    #     self.connection.close()
-    #     self.cursor.close()
+    def __del__(self):
+        self.cursor.close()
+        self.connection.close()
 
 
 def movie_by_title(query):
-    bd_connect = DbConnect('netflix.db')
+    db_connect = DbConnect('netflix.db')
     query_title = f"""
                     SELECT 
                         title, country, release_year, listed_in, description 
@@ -25,8 +25,8 @@ def movie_by_title(query):
                     LIMIT 
                         1
     """
-    bd_connect.cursor.execute(query_title, {"substring_pattern": f"%{query}%"})
-    result = bd_connect.cursor.fetchone()
+    db_connect.cursor.execute(query_title, {"substring_pattern": f"%{query}%"})
+    result = db_connect.cursor.fetchone()
     return {
         "title": result[0],
         "country": result[1],
@@ -37,7 +37,7 @@ def movie_by_title(query):
 
 
 def movie_between_years(year1, year2):
-    bd_connect = DbConnect('netflix.db')
+    db_connect = DbConnect('netflix.db')
     query_year = f"""
                     SELECT 
                         title, release_year
@@ -49,52 +49,46 @@ def movie_between_years(year1, year2):
                     LIMIT 
                         100
     """
-    bd_connect.cursor.execute(query_year, (year1, year2))
-    result = bd_connect.cursor.fetchall()
+    db_connect.cursor.execute(query_year, (year1, year2))
+    result = db_connect.cursor.fetchall()
     result_list = []
     for movie in result:
-        result_list.append({"title": movie[0], "release_year": movie[1]})
-
+        result_list.append({"title": movie[0],
+                            "release_year": movie[1]
+                            })
     return result_list
 
 
-####################################################
-######### Нужна пояснительная бригада!!!############
-####################################################
-# def movie_by_rating(viewers):
-#     bd_connect = DbConnect('netflix.db')
-#     groups_parameters= {"children": ('G',),
-#                          "family": ('G', 'PG', 'PG-13'),
-#                          "adult": ('R', 'NC-17')
-#     }
-#     if viewers not in groups_parameters:
-#         return "Just children/family/adult por favor"
-#     query_rating = f"""
-#                     SELECT
-#                         title, rating, description
-#                     FROM
-#                         netflix
-#                     WHERE rating IN :groups_parameters
-#                     ORDER BY
-#                         title desc
-#     """
-#     bd_connect.cursor.execute(query_rating, groups_parameters[viewers])
-#
-#     result = bd_connect.cursor.fetchall()
-#     result_list=[]
-#     for movie in result:
-#         result_list.append({"title": movie[0],
-#                             "rating": movie[1],
-#                             "description": movie[2]})
-#     return result_list
-# print(movie_by_rating("family"))
-####################################################
-######### Нужна пояснительная бригада!!!############
-####################################################
+def movie_by_rating(viewers):
+    db_connect = DbConnect('netflix.db')
+    groups_parameters = {"children": "'G',", "family": "'G', 'PG', 'PG-13'", 'adult': "'R', 'NC-17'"}
+    if viewers not in groups_parameters:
+        return "Just children/family/adult por favor"
+    query_rating = f"""
+                    SELECT
+                        title, rating, description
+                    FROM
+                        netflix
+                    WHERE 
+                        rating IN (:group_substring)
+                    ORDER BY
+                        title desc
+    """
+    db_connect.cursor.execute(query_rating, {'group_substring': groups_parameters[viewers]})
+    result = db_connect.cursor.fetchall()
+    result_list = []
+    for movie in result:
+        result_list.append({"title": movie[0],
+                            "rating": movie[1],
+                            "description": movie[2]})
+    return result
+
+
+print(movie_by_rating('family'))
 
 
 def movie_by_genre(genre):
-    bd_connect = DbConnect('netflix.db')
+    db_connect = DbConnect('netflix.db')
     query_genre = f"""
                     SELECT 
                         title, country, release_year, description 
@@ -106,8 +100,8 @@ def movie_by_genre(genre):
                     LIMIT 
                         10
     """
-    bd_connect.cursor.execute(query_genre, {"substring_pattern": f"%{genre}%"})
-    result = bd_connect.cursor.fetchall()
+    db_connect.cursor.execute(query_genre, {"substring_pattern": f"%{genre}%"})
+    result = db_connect.cursor.fetchall()
     result_list = []
     for movie in result:
         result_list.append({"title": movie[0],
@@ -116,7 +110,7 @@ def movie_by_genre(genre):
 
 
 def actors_played_two_times(actor1, actor2):
-    bd_connect = DbConnect('netflix.db')
+    db_connect = DbConnect('netflix.db')
 
     couple_of_actors = {"first_actor": f"%{actor1}%",
                         "second_actor": f"%{actor2}%"}
@@ -130,8 +124,8 @@ def actors_played_two_times(actor1, actor2):
                     ORDER BY
                         `cast` desc
     """
-    bd_connect.cursor.execute(query_actors, couple_of_actors)
-    result = bd_connect.cursor.fetchall()
+    db_connect.cursor.execute(query_actors, couple_of_actors)
+    result = db_connect.cursor.fetchall()
     actors_list = []
     for cast_tuple in result:
         actors_list.extend(cast_tuple[0].split(', '))
@@ -169,4 +163,4 @@ def movie_by_filter(type_movie, year, genre):
         "title": result[0],
         "description": result[1]
     }
-print(movie_by_filter('Movie', 2010, 'Drammas'))
+# print(movie_by_filter('Movie', 2010, 'Dramas'))
