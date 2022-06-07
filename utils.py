@@ -61,20 +61,23 @@ def movie_between_years(year1, year2):
 
 def movie_by_rating(viewers):
     db_connect = DbConnect('netflix.db')
-    groups_parameters = {"children": "'G',", "family": "'G', 'PG', 'PG-13'", 'adult': "'R', 'NC-17'"}
+    groups_parameters = {"children": ("'G',"),
+                         "family": ("'G', 'PG', 'PG-13'"),
+                         "adult": ("'R', 'NC-17'")}
     if viewers not in groups_parameters:
         return "Just children/family/adult por favor"
+    wrapper_parameters = groups_parameters[viewers]
     query_rating = f"""
                     SELECT
                         title, rating, description
                     FROM
                         netflix
                     WHERE 
-                        rating IN (:group_substring)
+                        rating IN ({", ".join('?' * len(wrapper_parameters))})
                     ORDER BY
                         title desc
     """
-    db_connect.cursor.execute(query_rating, {'group_substring': groups_parameters[viewers]})
+    db_connect.cursor.execute(query_rating, wrapper_parameters)
     result = db_connect.cursor.fetchall()
     result_list = []
     for movie in result:

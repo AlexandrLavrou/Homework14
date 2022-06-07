@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 
-from utils import *
+from utils import movie_by_title, movie_between_years, movie_by_rating, movie_by_genre
 
 app = Flask(__name__)
 
@@ -23,7 +23,7 @@ def get_movie_by_rating(viewers):
 app.route('/genre/<genre>')
 def get_movie_by_genre(genre):
     return jsonify(movie_by_genre(genre))
-app.route('/')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
